@@ -24,6 +24,7 @@ public class Main {
 
             String request;
             while ( ( request = in.readLine() ) != null ) {
+                System.out.printf( "Received Request: %s", request );
                 HttpRequest httpRequest = HttpRequest.parseRequest( request );
                 if ( httpRequest.getRequestTarget().startsWith( "/" ) ) {
                     out.write( String.format( "HTTP/1.1 200 OK%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );

@@ -9,14 +9,13 @@ public class HttpRequest {
     public static HttpRequest parseRequest( final String request ) {
         HttpRequest httpRequest = new HttpRequest();
         int back = 0;
-
         int front = request.indexOf( HttpConstants.CRLF );
         httpRequest.handleRequestLine( request.substring( back, front ) );
-
         return httpRequest;
     }
 
     private void handleRequestLine( String requestLine ) {
+        System.out.printf( "Handling Request Line: %s", requestLine );
         String[] tokens = requestLine.split( HttpConstants.REQUEST_LINE_SEPARATOR );
         httpMethod = tokens[0];
         requestTarget = tokens[1];
