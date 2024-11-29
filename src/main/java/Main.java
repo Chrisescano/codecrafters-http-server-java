@@ -25,7 +25,7 @@ public class Main {
             String request;
             while ( ( request = in.readLine() ) != null ) {
                 HttpRequest httpRequest = HttpRequest.parseRequest( request );
-                if ( httpRequest.getRequestTarget().equals( "/" ) ) {
+                if ( httpRequest.getRequestTarget().startsWith( "/" ) ) {
                     out.write( String.format( "HTTP/1.1 200 OK%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
                 } else {
                     out.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
