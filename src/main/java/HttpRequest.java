@@ -8,7 +8,7 @@ public class HttpRequest {
 
     public static HttpRequest parseRequest( final String request ) {
         HttpRequest httpRequest = new HttpRequest();
-        String[] tokens = request.split( " " );
+        String[] tokens = request.split( HttpConstants.REQUEST_LINE_SEPARATOR );
 
         httpRequest.httpMethod = tokens[0];
         httpRequest.requestTarget = tokens[1];

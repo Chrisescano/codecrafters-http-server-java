@@ -22,21 +22,23 @@ public class Main {
             BufferedReader in = new BufferedReader( new InputStreamReader( socket.getInputStream() ) );
             BufferedWriter out = new BufferedWriter( new OutputStreamWriter( socket.getOutputStream() ) );
 
-            String request;
-            while ( ( request = in.readLine() ) != null ) {
-                System.out.printf( "Received Request: %s", request );
-                HttpRequest httpRequest = HttpRequest.parseRequest( request );
-                if ( httpRequest.getRequestTarget().equals( "/" ) ) {
-                    out.write( String.format( "HTTP/1.1 200 OK%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
-                } else if ( httpRequest.getRequestTarget().startsWith( "/echo/" )) {
-                    String echo = httpRequest.getRequestTarget().substring( 6 );
-                    out.write( String.format( "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
-                            HttpConstants.CRLF, HttpConstants.CRLF, echo.length(), HttpConstants.CRLF, HttpConstants.CRLF, echo) );
-                } else {
-                    out.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
-                }
-                out.flush();
+            String request = in.lines().toString();
+//            String request;
+//            while ( ( request = in.readLine() ) != null ) {
+//                System.out.printf( "Received Request: %s\n", request );
+//
+//            }
+            HttpRequest httpRequest = HttpRequest.parseRequest( request );
+            if ( httpRequest.getRequestTarget().equals( "/" ) ) {
+                out.write( String.format( "HTTP/1.1 200 OK%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
+            } else if ( httpRequest.getRequestTarget().startsWith( "/echo/" )) {
+                String echo = httpRequest.getRequestTarget().substring( 6 );
+                out.write( String.format( "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
+                        HttpConstants.CRLF, HttpConstants.CRLF, echo.length(), HttpConstants.CRLF, HttpConstants.CRLF, echo) );
+            } else {
+                out.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
             }
+            out.flush();
 
             in.close();
             out.close();
