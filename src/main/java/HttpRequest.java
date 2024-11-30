@@ -8,9 +8,10 @@ public class HttpRequest {
 
     public static HttpRequest parseRequest( final String request ) {
         HttpRequest httpRequest = new HttpRequest();
-        int back = 0;
-        int front = request.indexOf( HttpConstants.CRLF );
-        httpRequest.handleRequestLine( request.substring( back, front ) );
+        //int back = 0;
+        //int front = request.indexOf( HttpConstants.CRLF );
+        //httpRequest.handleRequestLine( request.substring( back, front ) );
+        httpRequest.handleRequestLine( request );
         return httpRequest;
     }
 
