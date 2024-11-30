@@ -8,19 +8,22 @@ public class HttpRequest {
 
     public static HttpRequest parseRequest( final String request ) {
         HttpRequest httpRequest = new HttpRequest();
-        //int back = 0;
-        //int front = request.indexOf( HttpConstants.CRLF );
-        //httpRequest.handleRequestLine( request.substring( back, front ) );
-        httpRequest.handleRequestLine( request );
+        String[] tokens = request.split( " " );
+
+        httpRequest.httpMethod = tokens[0];
+        httpRequest.requestTarget = tokens[1];
+        httpRequest.httpVersion = tokens[2];
+
         return httpRequest;
     }
 
-    private void handleRequestLine( String requestLine ) {
-        System.out.printf( "Handling Request Line: %s", requestLine );
-        String[] tokens = requestLine.split( HttpConstants.REQUEST_LINE_SEPARATOR );
-        httpMethod = tokens[0];
-        requestTarget = tokens[1];
-        httpVersion = tokens[2];
+    @Override
+    public String toString() {
+        return "HttpRequest{" +
+                "httpMethod='" + httpMethod + '\'' +
+                ", requestTarget='" + requestTarget + '\'' +
+                ", httpVersion='" + httpVersion + '\'' +
+                '}';
     }
 
     /*----- Getters/Setters -----*/

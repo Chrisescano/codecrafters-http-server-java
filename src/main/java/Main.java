@@ -28,6 +28,10 @@ public class Main {
                 HttpRequest httpRequest = HttpRequest.parseRequest( request );
                 if ( httpRequest.getRequestTarget().equals( "/" ) ) {
                     out.write( String.format( "HTTP/1.1 200 OK%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
+                } else if ( httpRequest.getRequestTarget().startsWith( "/echo/" )) {
+                    String echo = httpRequest.getRequestTarget().substring( 6 );
+                    out.write( String.format( "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
+                            HttpConstants.CRLF, HttpConstants.CRLF, echo.length(), HttpConstants.CRLF, HttpConstants.CRLF, echo) );
                 } else {
                     out.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
                 }
