@@ -1,97 +1,84 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Main {
-    public static void main( String[] args ) {
-        // You can use print statements as follows for debugging, they'll be visible when running tests.
-        System.out.println( "Logs from your program will appear here!" );
 
-        try {
-            ServerSocket serverSocket = new ServerSocket( 4221 );
+    @SuppressWarnings( "InfiniteLoopStatement" )
+    public static void main( String[] args ) {
+        final String directory;
+
+        if ( args.length > 1 && args[0].equals( "--directory" ) ) {
+            directory = args[1];
+        } else {
+            directory = "";
+        }
+
+        System.out.println( "Logs from your program will appear here!" );
+        try ( ServerSocket serverSocket = new ServerSocket() ) {
             serverSocket.setReuseAddress( true ); // ensures that we don't run into 'Address already in use' errors
 
             while ( true ) {
-                Socket socket = serverSocket.accept(); // Wait for connection from client.
-
-                Thread connectionThread = new Thread(() -> {
-                    System.out.println( "accepted new connection" );
-                    BufferedReader in;
-                    BufferedWriter out;
-
-                    try {
-                        in = new BufferedReader( new InputStreamReader( socket.getInputStream() ) );
-                        out = new BufferedWriter( new OutputStreamWriter( socket.getOutputStream() ) );
-                    } catch ( IOException e ) {
-                        throw new RuntimeException( e );
-                    }
-                    StringBuilder request = new StringBuilder();
-
-                    while ( true ) {
-                        String line;
-                        try {
-                            line = in.readLine();
-                        } catch ( IOException e ) {
-                            throw new RuntimeException( e );
+                Thread connection = new Thread(() -> {
+                    try (
+                            Socket socket = serverSocket.accept();
+                            BufferedReader in = new BufferedReader( new InputStreamReader( socket.getInputStream() ) );
+                            BufferedWriter out = new BufferedWriter( new OutputStreamWriter( socket.getOutputStream() ) )
+                    ) {
+                        System.out.println( "accepted new connection");
+                        StringBuilder request = new StringBuilder();
+                        while ( true ) {
+                            String line = in.readLine();
+                            request.append( line ).append( HttpConstants.CRLF );
+                            if ( line == null || line.isEmpty() ) {
+                                break;
+                            }
                         }
 
-                        request.append( line ).append( HttpConstants.CRLF );
-                        if ( line == null || line.isEmpty() ) {
-                            break;
-                        }
-                    }
-
-                    System.out.printf( "Received Request: %s\n", request );
-                    HttpRequest httpRequest = HttpRequest.parseRequest( request.toString() );
-                    if ( httpRequest.getRequestTarget().equals( "/" ) ) {
-                        try {
+                        System.out.printf( "Received Request: %s\n", request );
+                        HttpRequest httpRequest = HttpRequest.parseRequest( request.toString() );
+                        String requestTarget = httpRequest.getRequestTarget();
+                        if ( requestTarget.equals( "/" ) ) {
                             out.write( String.format( "HTTP/1.1 200 OK%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
-                        } catch ( IOException e ) {
-                            throw new RuntimeException( e );
-                        }
-                    } else if ( httpRequest.getRequestTarget().startsWith( "/echo/" )) {
-                        String echo = httpRequest.getRequestTarget().substring( 6 );
-                        try {
+                        } else if ( requestTarget.startsWith( "/echo/" ) ) {
+                            String echo = httpRequest.getRequestTarget().substring( 6 );
                             out.write( String.format( "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
                                     HttpConstants.CRLF, HttpConstants.CRLF, echo.length(), HttpConstants.CRLF, HttpConstants.CRLF, echo ) );
-                        } catch ( IOException e ) {
-                            throw new RuntimeException( e );
-                        }
-                    } else if ( httpRequest.getRequestTarget().equals( "/user-agent" ) ) {
-                        Map<String, String> headers = httpRequest.getHeaders();
-                        String userAgent = headers.get( "User-Agent" );
-                        try {
+                        } else if ( requestTarget.equals( "/user-agent" ) ) {
+                            Map<String, String> headers = httpRequest.getHeaders();
+                            String userAgent = headers.get( "User-Agent" );
                             out.write( String.format(
                                     "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
                                     HttpConstants.CRLF, HttpConstants.CRLF, userAgent.length(), HttpConstants.CRLF, HttpConstants.CRLF, userAgent
                             ) );
-                        } catch ( IOException e ) {
-                            throw new RuntimeException( e );
-                        }
-                    } else {
-                        try {
+                        } else if ( requestTarget.equals( "/files/" )) {
+                            String fileName = requestTarget.substring( 7 );
+                            File file = new File( directory, fileName );
+                            if ( file.exists() ) {
+                                byte[] fileContents = Files.readAllBytes( file.toPath() );
+                                out.write( String.format(
+                                        "HTTP/1.1 200 OK%sCotent-Type: application/octet-stream%sCotent-Length: %d%s%s%s",
+                                        HttpConstants.CRLF, HttpConstants.CRLF, fileContents.length, HttpConstants.CRLF,
+                                        HttpConstants.CRLF, new String( fileContents )
+                                ) );
+                            } else {
+                                out.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
+                            }
+                        } else {
                             out.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
-                        } catch ( IOException e ) {
-                            throw new RuntimeException( e );
                         }
-                    }
-
-                    try {
-                        out.flush();
-                        in.close();
-                        out.close();
-                        socket.close();
                     } catch ( IOException e ) {
                         throw new RuntimeException( e );
                     }
                 });
-                connectionThread.start();
+                connection.start();
             }
         } catch ( IOException e ) {
             System.out.println( "IOException: " + e.getMessage() );
