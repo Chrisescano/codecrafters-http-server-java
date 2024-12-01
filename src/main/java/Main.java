@@ -60,11 +60,12 @@ public class Main {
                             ) );
                         } else if ( requestTarget.equals( "/files/" )) {
                             String fileName = requestTarget.substring( 7 );
+                            System.out.printf( "Directory: %s File: %s\n", directory, fileName );
                             File file = new File( directory, fileName );
                             if ( file.exists() ) {
                                 byte[] fileContents = Files.readAllBytes( file.toPath() );
                                 out.write( String.format(
-                                        "HTTP/1.1 200 OK%sCotent-Type: application/octet-stream%sCotent-Length: %d%s%s%s",
+                                        "HTTP/1.1 200 OK%sContent-Type: application/octet-stream%sContent-Length: %d%s%s%s",
                                         HttpConstants.CRLF, HttpConstants.CRLF, fileContents.length, HttpConstants.CRLF,
                                         HttpConstants.CRLF, new String( fileContents )
                                 ) );
