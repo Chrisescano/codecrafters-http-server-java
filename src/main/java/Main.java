@@ -22,6 +22,7 @@ public class Main {
         }
 
         System.out.println( "Logs from your program will appear here!" );
+        System.out.printf( "Directory: %s\n", directory );
         try ( ServerSocket serverSocket = new ServerSocket( 4221 ) ) {
             serverSocket.setReuseAddress( true ); // ensures that we don't run into 'Address already in use' errors
 
@@ -60,7 +61,6 @@ public class Main {
                             ) );
                         } else if ( requestTarget.equals( "/files/" )) {
                             String fileName = requestTarget.substring( 7 );
-                            System.out.printf( "Directory: %s File: %s\n", directory, fileName );
                             File file = new File( directory, fileName );
                             if ( file.exists() ) {
                                 byte[] fileContents = Files.readAllBytes( file.toPath() );
