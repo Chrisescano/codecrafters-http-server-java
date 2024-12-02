@@ -59,7 +59,7 @@ public class Main {
                                     "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
                                     HttpConstants.CRLF, HttpConstants.CRLF, userAgent.length(), HttpConstants.CRLF, HttpConstants.CRLF, userAgent
                             ) );
-                        } else if ( requestTarget.equals( "/files/" )) {
+                        } else if ( requestTarget.startsWith( "/files/" )) {
                             String fileName = requestTarget.substring( 7 );
                             File file = Paths.get( directory, fileName ).toFile();
                             System.out.printf( "File Path: %s\n", file.getAbsolutePath() );
@@ -76,6 +76,7 @@ public class Main {
                         } else {
                             out.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
                         }
+                        out.flush();
                     } catch ( IOException e ) {
                         throw new RuntimeException( e );
                     }
