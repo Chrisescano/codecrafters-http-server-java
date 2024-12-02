@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 public class Main {
@@ -22,7 +23,6 @@ public class Main {
         }
 
         System.out.println( "Logs from your program will appear here!" );
-        System.out.printf( "Directory: %s\n", directory );
         try ( ServerSocket serverSocket = new ServerSocket( 4221 ) ) {
             serverSocket.setReuseAddress( true ); // ensures that we don't run into 'Address already in use' errors
 
@@ -61,7 +61,8 @@ public class Main {
                             ) );
                         } else if ( requestTarget.equals( "/files/" )) {
                             String fileName = requestTarget.substring( 7 );
-                            File file = new File( directory, fileName );
+                            File file = Paths.get( directory, fileName ).toFile();
+                            System.out.printf( "File Path: %s\n", file.getAbsolutePath() );
                             if ( file.exists() ) {
                                 byte[] fileContents = Files.readAllBytes( file.toPath() );
                                 out.write( String.format(
