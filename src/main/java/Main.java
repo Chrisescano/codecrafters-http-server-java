@@ -22,26 +22,27 @@ public class Main {
         ) {
             serverSocket.setReuseAddress( true );
 
-//            Thread socketAcceptThread = new Thread(() -> {
-//                while ( true ) {
-//                    try ( Socket socket = serverSocket.accept() ) {
-//                        System.out.println( "accepted new connection" );
-//                        executorService.execute( new HttpHandler( socket, directory ) );
-//                    } catch ( IOException e ) {
-//                        throw new RuntimeException( e );
-//                    }
-//                }
-//            });
-//            socketAcceptThread.start();
+            Thread socketAcceptThread = new Thread(() -> {
+                while ( true ) {
+                    try ( Socket socket = serverSocket.accept() ) {
+                        System.out.println( "accepted new connection" );
+                        Runnable handler = new HttpHandler( socket, directory );
+                        executorService.execute( handler );
+                    } catch ( IOException e ) {
+                        throw new RuntimeException( e );
+                    }
+                }
+            });
+            socketAcceptThread.start();
 
-            try {
-                Socket socket = serverSocket.accept();
-                System.out.println( "accepted new connection" );
-                Runnable handler = new HttpHandler( socket, directory );
-                executorService.execute( handler );
-            } catch ( IOException e ) {
-                throw new IOException( e );
-            }
+//            try {
+//                Socket socket = serverSocket.accept();
+//                System.out.println( "accepted new connection" );
+//                Runnable handler = new HttpHandler( socket, directory );
+//                executorService.execute( handler );
+//            } catch ( IOException e ) {
+//                throw new IOException( e );
+//            }
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
