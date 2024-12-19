@@ -1,9 +1,6 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-
-import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Main {
 
@@ -18,31 +15,23 @@ public class Main {
         System.out.println( "Logs from your program will appear here!" );
         try (
                 ServerSocket serverSocket = new ServerSocket( 4221 );
-                ExecutorService executorService = newFixedThreadPool( 100 )
         ) {
             serverSocket.setReuseAddress( true );
 
-            Thread socketAcceptThread = new Thread(() -> {
-                while ( true ) {
-                    try ( Socket socket = serverSocket.accept() ) {
-                        System.out.println( "accepted new connection" );
-                        Runnable handler = new HttpHandler( socket, directory );
-                        executorService.execute( handler );
-                    } catch ( IOException e ) {
-                        throw new RuntimeException( e );
+            while ( true ) {
+                Thread socketAcceptThread = new Thread(() -> {
+                    while ( true ) {
+                        try ( Socket socket = serverSocket.accept() ) {
+                            System.out.println( "accepted new connection" );
+                            Runnable handler = new HttpHandler( socket, directory );
+                            handler.run();
+                        } catch ( IOException e ) {
+                            throw new RuntimeException( e );
+                        }
                     }
-                }
-            });
-            socketAcceptThread.start();
-
-//            try {
-//                Socket socket = serverSocket.accept();
-//                System.out.println( "accepted new connection" );
-//                Runnable handler = new HttpHandler( socket, directory );
-//                executorService.execute( handler );
-//            } catch ( IOException e ) {
-//                throw new IOException( e );
-//            }
+                });
+                socketAcceptThread.start();
+            }
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
