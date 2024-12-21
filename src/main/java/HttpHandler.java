@@ -36,6 +36,7 @@ public class HttpHandler implements Runnable {
             request.parseRequest();
             System.out.printf( "Received Request: %s\n", request );
             String requestTarget = request.getRequestTarget();
+            Map<HttpHeader, String> requestHeaders = request.getHeaders();
             StringBuilder response = null;
 
             if ( requestTarget.equals( "/" ) ) {
@@ -46,13 +47,16 @@ public class HttpHandler implements Runnable {
                 responseHeaders.put( HttpHeader.CONTENT_TYPE, "text/plain" );
                 responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
 
-                if ( request.getHeaders().get( HttpHeader.ACCEPT_ENCODING ).equals( "gzip" ) ) {
+                if (
+                        requestHeaders.containsKey( HttpHeader.ACCEPT_ENCODING ) &&
+                        requestHeaders.get( HttpHeader.ACCEPT_ENCODING ).equals( "gzip" )
+                ) {
                     responseHeaders.put( HttpHeader.CONTENT_ENCODING, "gzip" );
                 }
 
                 response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
             } else if ( requestTarget.equals( "/user-agent" ) ) {
-                String userAgent = request.getHeaders().get( HttpHeader.USER_AGENT );
+                String userAgent = requestHeaders.get( HttpHeader.USER_AGENT );
                 Map<HttpHeader, String> responseHeaders = Map.of(
                         HttpHeader.CONTENT_TYPE, "text/plain",
                         HttpHeader.CONTENT_LENGTH, String.valueOf( userAgent.length() )
