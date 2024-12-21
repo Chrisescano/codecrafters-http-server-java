@@ -47,11 +47,13 @@ public class HttpHandler implements Runnable {
                 responseHeaders.put( HttpHeader.CONTENT_TYPE, "text/plain" );
                 responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
 
-                if (
-                        requestHeaders.containsKey( HttpHeader.ACCEPT_ENCODING ) &&
-                        requestHeaders.get( HttpHeader.ACCEPT_ENCODING ).equals( "gzip" )
-                ) {
-                    responseHeaders.put( HttpHeader.CONTENT_ENCODING, "gzip" );
+                if ( requestHeaders.containsKey( HttpHeader.ACCEPT_ENCODING ) ) {
+                    String[] clientEncodings = requestHeaders.get( HttpHeader.ACCEPT_ENCODING ).split( "," );
+                    for ( String encoding : clientEncodings ) {
+                        if ( encoding.trim().equals( "gzip" ) ) {
+                            responseHeaders.put( HttpHeader.CONTENT_ENCODING, "gzip" );
+                        }
+                    }
                 }
 
                 response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
