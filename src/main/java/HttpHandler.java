@@ -65,11 +65,9 @@ public class HttpHandler implements Runnable {
                         socket.getOutputStream().flush();
                         return;
                     }
-                } else {
-                    responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
-                    response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
                 }
-
+                responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
+                response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
             } else if ( requestTarget.equals( "/user-agent" ) ) {
                 String userAgent = requestHeaders.get( HttpHeader.USER_AGENT );
                 Map<HttpHeader, String> responseHeaders = Map.of(
