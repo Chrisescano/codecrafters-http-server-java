@@ -63,6 +63,7 @@ public class HttpHandler implements Runnable {
                         response = buildResponse( HttpStatusCode.OK, responseHeaders );
                         socket.getOutputStream().write( response.toString().getBytes( StandardCharsets.UTF_8 ) );
                         socket.getOutputStream().write( compressedData );
+                        socket.getOutputStream().flush();
                         return;
                     }
                 } else {

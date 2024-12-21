@@ -17,6 +17,7 @@ public class GZip {
                 GZIPOutputStream gzipStream = new GZIPOutputStream( byteStream )
         ) {
             gzipStream.write( data.getBytes( StandardCharsets.UTF_8 ) );
+            gzipStream.flush();
             return byteStream.toByteArray();
         } catch ( IOException e ) {
             throw new RuntimeException( e );
