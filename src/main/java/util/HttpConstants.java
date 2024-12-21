@@ -1,3 +1,5 @@
+package util;
+
 public class HttpConstants {
 
     public static String CRLF = "\r\n";

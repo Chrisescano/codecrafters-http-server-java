@@ -1,3 +1,8 @@
+import util.HttpConstants;
+import util.HttpHeader;
+import util.HttpStatusCode;
+import util.HttpVersion;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -8,6 +13,7 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 public class HttpHandler implements Runnable {
@@ -28,53 +34,83 @@ public class HttpHandler implements Runnable {
         ) {
             HttpRequest request = new HttpRequest( reader );
             request.parseRequest();
-
             System.out.printf( "Received Request: %s\n", request );
             String requestTarget = request.getRequestTarget();
+            StringBuilder response = null;
+
             if ( requestTarget.equals( "/" ) ) {
-                writer.write( String.format( "HTTP/1.1 200 OK%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
+                response = buildResponse( HttpStatusCode.OK, true );
             } else if ( requestTarget.startsWith( "/echo/" ) ) {
                 String echo = requestTarget.substring( 6 );
-                writer.write( String.format( "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
-                        HttpConstants.CRLF, HttpConstants.CRLF, echo.length(), HttpConstants.CRLF, HttpConstants.CRLF, echo ) );
+                Map<HttpHeader, String> responseHeaders = new HashMap<>();
+                responseHeaders.put( HttpHeader.CONTENT_TYPE, "text/plain" );
+                responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
+
+                if ( request.getHeaders().get( HttpHeader.ACCEPT_ENCODING ).equals( "gzip" ) ) {
+                    responseHeaders.put( HttpHeader.CONTENT_ENCODING, "gzip" );
+                }
+
+                response = buildResponse( HttpStatusCode.OK, responseHeaders );
             } else if ( requestTarget.equals( "/user-agent" ) ) {
-                Map<HttpHeader, String> headers = request.getHeaders();
-                String userAgent = headers.get( HttpHeader.USER_AGENT );
-                writer.write( String.format(
-                        "HTTP/1.1 200 OK%sContent-Type: text/plain%sContent-Length: %d%s%s%s",
-                        HttpConstants.CRLF, HttpConstants.CRLF, userAgent.length(), HttpConstants.CRLF, HttpConstants.CRLF, userAgent
-                ) );
+                String userAgent = request.getHeaders().get( HttpHeader.USER_AGENT );
+                Map<HttpHeader, String> responseHeaders = Map.of(
+                        HttpHeader.CONTENT_TYPE, "text/plain",
+                        HttpHeader.CONTENT_LENGTH, String.valueOf( userAgent.length() )
+                );
+                response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( userAgent );
             } else if ( request.getHttpMethod().equals( "GET" ) && requestTarget.startsWith( "/files/" )) {
                 String fileName = requestTarget.substring( 7 );
                 File file = Paths.get( directory, fileName ).toFile();
-                System.out.printf( "File Path: %s\n", file.getAbsolutePath() );
                 if ( file.exists() ) {
                     byte[] fileContents = Files.readAllBytes( file.toPath() );
-                    writer.write( String.format(
-                            "HTTP/1.1 200 OK%sContent-Type: application/octet-stream%sContent-Length: %d%s%s%s",
-                            HttpConstants.CRLF, HttpConstants.CRLF, fileContents.length, HttpConstants.CRLF,
-                            HttpConstants.CRLF, new String( fileContents )
-                    ) );
+                    Map<HttpHeader, String> responseHeaders = Map.of(
+                            HttpHeader.CONTENT_TYPE, "application/octet-stream",
+                            HttpHeader.CONTENT_LENGTH, String.valueOf( fileContents.length )
+                    );
+                    response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( new String( fileContents ) );
                 } else {
-                    writer.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
+                    response = buildResponse( HttpStatusCode.NOT_FOUND, true );
                 }
             } else if ( request.getHttpMethod().equals( "POST" ) && requestTarget.startsWith( "/files/" ) ) {
                 String fileName = requestTarget.substring( 7 );
                 File file = Paths.get( directory, fileName ).toFile();
-                System.out.printf( "File Path: %s\n", file.getAbsolutePath() );
                 if ( file.createNewFile() ) {
                     BufferedWriter fileWriter = new BufferedWriter( new FileWriter( file ) );
                     fileWriter.write( request.getBody() );
                     fileWriter.flush();
                     fileWriter.close();
-                    writer.write( String.format( "HTTP/1.1 201 Created%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
+                    response = buildResponse( HttpStatusCode.CREATED, true );
                 }
             } else {
-                writer.write( String.format( "HTTP/1.1 404 Not Found%s%s", HttpConstants.CRLF, HttpConstants.CRLF ) );
+                response = buildResponse( HttpStatusCode.NOT_FOUND, true );
+            }
+
+            if ( response != null ) {
+                writer.write( response.toString() );
             }
             writer.flush();
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+    private StringBuilder buildResponse( HttpStatusCode statusCode, boolean hasCRLF ) {
+        StringBuilder response = new StringBuilder();
+        response.append( HttpVersion.ONE_POINT_ONE.getVersion() )
+                .append( HttpConstants.REQUEST_LINE_SEPARATOR )
+                .append( statusCode.getStatusCode() )
+                .append( HttpConstants.CRLF );
+        return hasCRLF ? response.append( HttpConstants.CRLF ) : response;
+    }
+
+    private StringBuilder buildResponse( HttpStatusCode statusCode, Map<HttpHeader, String> responseHeaders ) {
+        StringBuilder response = buildResponse( statusCode, false );
+        for ( HttpHeader header : responseHeaders.keySet() ) {
+            response.append( header.getField() )
+                    .append( HttpConstants.HEADER_SEPARATOR )
+                    .append( HttpConstants.REQUEST_LINE_SEPARATOR )
+                    .append( responseHeaders.get( header ) );
+        }
+        return response.append( HttpConstants.CRLF );
     }
 }

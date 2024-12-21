@@ -1,9 +1,13 @@
+package util;
+
 public enum HttpHeader {
-    HOST("Host"),
-    USER_AGENT("User-Agent"),
-    ACCEPT("Accept"),
-    CONTENT_TYPE("Content-Type"),
-    CONTENT_LENGTH("Content-Length");
+    HOST( "Host" ),
+    USER_AGENT( "User-Agent" ),
+    ACCEPT( "Accept" ),
+    CONTENT_TYPE( "Content-Type" ),
+    CONTENT_LENGTH( "Content-Length" ),
+    CONTENT_ENCODING( "Content-Encoding" ),
+    ACCEPT_ENCODING( "Accept_Encoding" );
 
     private final String field;
 
