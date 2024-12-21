@@ -2,14 +2,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-/*
-Create annotations for the different parts of a request (e.g. body, uripath, headers, etc...)
-Create annotations for path variables (e.g. files/{readme}
-These annotations would be for parameters
-
-resource:
-https://www.google.com/search?q=spring+endpoint+methods&rlz=1C1ONGR_enUS1124US1124&oq=spring+endpoint+methods&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRifBdIBCjE0NjA3ajBqMTWoAgiwAgE&sourceid=chrome&ie=UTF-8
- */
 public class Main {
 
     @SuppressWarnings( "InfiniteLoopStatement" )
