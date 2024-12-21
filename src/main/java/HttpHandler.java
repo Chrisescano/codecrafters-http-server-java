@@ -50,7 +50,7 @@ public class HttpHandler implements Runnable {
                     responseHeaders.put( HttpHeader.CONTENT_ENCODING, "gzip" );
                 }
 
-                response = buildResponse( HttpStatusCode.OK, responseHeaders );
+                response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
             } else if ( requestTarget.equals( "/user-agent" ) ) {
                 String userAgent = request.getHeaders().get( HttpHeader.USER_AGENT );
                 Map<HttpHeader, String> responseHeaders = Map.of(
