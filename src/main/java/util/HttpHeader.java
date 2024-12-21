@@ -27,6 +27,8 @@ public enum HttpHeader {
             case "Accept" -> httpHeader = HttpHeader.ACCEPT;
             case "Content-Type" -> httpHeader = HttpHeader.CONTENT_TYPE;
             case "Content-Length" -> httpHeader = HttpHeader.CONTENT_LENGTH;
+            case "Content-Encoding" -> httpHeader = HttpHeader.CONTENT_ENCODING;
+            case "Accept-Encoding" -> httpHeader = HttpHeader.ACCEPT_ENCODING;
         }
         return httpHeader;
     }
