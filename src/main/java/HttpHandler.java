@@ -15,7 +15,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +56,7 @@ public class HttpHandler implements Runnable {
                         }
                     }
 
-                    if ( requestHeaders.containsKey( HttpHeader.CONTENT_ENCODING ) ) {
+                    if ( responseHeaders.containsKey( HttpHeader.CONTENT_ENCODING ) ) {
                         byte[] compressedData = GZip.compress( echo );
                         responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( compressedData.length ) );
                         response = buildResponse( HttpStatusCode.OK, responseHeaders );
