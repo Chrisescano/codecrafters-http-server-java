@@ -109,7 +109,8 @@ public class HttpHandler implements Runnable {
             response.append( header.getField() )
                     .append( HttpConstants.HEADER_SEPARATOR )
                     .append( HttpConstants.REQUEST_LINE_SEPARATOR )
-                    .append( responseHeaders.get( header ) );
+                    .append( responseHeaders.get( header ) )
+                    .append( HttpConstants.CRLF );
         }
         return response.append( HttpConstants.CRLF );
     }
