@@ -1,3 +1,4 @@
+import compression.GZip;
 import util.HttpConstants;
 import util.HttpHeader;
 import util.HttpStatusCode;
@@ -11,8 +12,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,7 +48,6 @@ public class HttpHandler implements Runnable {
                 String echo = requestTarget.substring( 6 );
                 Map<HttpHeader, String> responseHeaders = new HashMap<>();
                 responseHeaders.put( HttpHeader.CONTENT_TYPE, "text/plain" );
-                responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
 
                 if ( requestHeaders.containsKey( HttpHeader.ACCEPT_ENCODING ) ) {
                     String[] clientEncodings = requestHeaders.get( HttpHeader.ACCEPT_ENCODING ).split( "," );
@@ -54,9 +56,20 @@ public class HttpHandler implements Runnable {
                             responseHeaders.put( HttpHeader.CONTENT_ENCODING, "gzip" );
                         }
                     }
+
+                    if ( requestHeaders.containsKey( HttpHeader.CONTENT_ENCODING ) ) {
+                        byte[] compressedData = GZip.compress( echo );
+                        responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( compressedData.length ) );
+                        response = buildResponse( HttpStatusCode.OK, responseHeaders );
+                        socket.getOutputStream().write( response.toString().getBytes( StandardCharsets.UTF_8 ) );
+                        socket.getOutputStream().write( compressedData );
+                        return;
+                    }
+                } else {
+                    responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
+                    response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
                 }
 
-                response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
             } else if ( requestTarget.equals( "/user-agent" ) ) {
                 String userAgent = requestHeaders.get( HttpHeader.USER_AGENT );
                 Map<HttpHeader, String> responseHeaders = Map.of(
