@@ -1,8 +1,5 @@
 import compression.GZip;
 import util.HttpConstants;
-import util.HttpHeader;
-import util.HttpStatusCode;
-import util.HttpVersion;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -10,12 +7,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 
 public class HttpHandler implements Runnable {
@@ -30,63 +24,56 @@ public class HttpHandler implements Runnable {
 
     @Override
     public void run() {
-        try (
-                BufferedReader reader = new BufferedReader( new InputStreamReader( socket.getInputStream() ) );
-                BufferedWriter writer = new BufferedWriter( new OutputStreamWriter( socket.getOutputStream() ) )
-        ) {
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( socket.getInputStream() ) ) ) {
             HttpRequest request = new HttpRequest( reader );
+            HttpResponse response = new HttpResponse( socket.getOutputStream(), HttpConstants.HTTP_VERSION_1_1 );
             request.parseRequest();
+            Map<String, String> requestHeaders = request.getHeaders();
             System.out.printf( "Received Request: %s\n", request );
             String requestTarget = request.getRequestTarget();
-            Map<HttpHeader, String> requestHeaders = request.getHeaders();
-            StringBuilder response = null;
 
             if ( requestTarget.equals( "/" ) ) {
-                response = buildResponse( HttpStatusCode.OK, true );
+                response.setStatusCode( HttpConstants.OK_RESPONSE );
+                response.sendResponse();
             } else if ( requestTarget.startsWith( "/echo/" ) ) {
                 String echo = requestTarget.substring( 6 );
-                Map<HttpHeader, String> responseHeaders = new HashMap<>();
-                responseHeaders.put( HttpHeader.CONTENT_TYPE, "text/plain" );
-
-                if ( requestHeaders.containsKey( HttpHeader.ACCEPT_ENCODING ) ) {
-                    String[] clientEncodings = requestHeaders.get( HttpHeader.ACCEPT_ENCODING ).split( "," );
+                response.addHeader( HttpConstants.CONTENT_TYPE, "text/plain" );
+                if ( requestHeaders.containsKey( HttpConstants.ACCEPT_ENCODING ) ) {
+                    String[] clientEncodings = requestHeaders.get( HttpConstants.ACCEPT_ENCODING ).split( "," );
                     for ( String encoding : clientEncodings ) {
                         if ( encoding.trim().equals( "gzip" ) ) {
-                            responseHeaders.put( HttpHeader.CONTENT_ENCODING, "gzip" );
+                            response.addHeader( HttpConstants.CONTENT_ENCODING, "gzip" );
                         }
                     }
 
-                    if ( responseHeaders.containsKey( HttpHeader.CONTENT_ENCODING ) ) {
+                    if ( response.containsHeader( HttpConstants.CONTENT_ENCODING ) ) {
                         byte[] compressedData = GZip.compress( echo );
-                        responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( compressedData.length ) );
-                        response = buildResponse( HttpStatusCode.OK, responseHeaders );
-                        socket.getOutputStream().write( response.toString().getBytes( StandardCharsets.UTF_8 ) );
-                        socket.getOutputStream().write( compressedData );
-                        socket.getOutputStream().flush();
-                        return;
+                        response.addHeader( HttpConstants.CONTENT_LENGTH, String.valueOf( compressedData.length ) );
+                        response.setStatusCode( HttpConstants.OK_RESPONSE );
+                        response.sendResponse( compressedData );
                     }
                 }
-                responseHeaders.put( HttpHeader.CONTENT_LENGTH, String.valueOf( echo.length() ) );
-                response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( echo );
+                response.addHeader( HttpConstants.CONTENT_LENGTH, String.valueOf( echo.length() ) );
+                response.setStatusCode( HttpConstants.OK_RESPONSE );
+                response.sendResponse( echo );
             } else if ( requestTarget.equals( "/user-agent" ) ) {
-                String userAgent = requestHeaders.get( HttpHeader.USER_AGENT );
-                Map<HttpHeader, String> responseHeaders = Map.of(
-                        HttpHeader.CONTENT_TYPE, "text/plain",
-                        HttpHeader.CONTENT_LENGTH, String.valueOf( userAgent.length() )
-                );
-                response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( userAgent );
+                String userAgent = requestHeaders.get( HttpConstants.USER_AGENT );
+                response.addHeader( HttpConstants.CONTENT_TYPE, "text/plain" );
+                response.addHeader( HttpConstants.CONTENT_LENGTH, String.valueOf( userAgent.length() ) );
+                response.setStatusCode( HttpConstants.OK_RESPONSE );
+                response.sendResponse( userAgent );
             } else if ( request.getHttpMethod().equals( "GET" ) && requestTarget.startsWith( "/files/" )) {
                 String fileName = requestTarget.substring( 7 );
                 File file = Paths.get( directory, fileName ).toFile();
                 if ( file.exists() ) {
                     byte[] fileContents = Files.readAllBytes( file.toPath() );
-                    Map<HttpHeader, String> responseHeaders = Map.of(
-                            HttpHeader.CONTENT_TYPE, "application/octet-stream",
-                            HttpHeader.CONTENT_LENGTH, String.valueOf( fileContents.length )
-                    );
-                    response = buildResponse( HttpStatusCode.OK, responseHeaders ).append( new String( fileContents ) );
+                    response.addHeader( HttpConstants.CONTENT_TYPE, "application/octet-stream" );
+                    response.addHeader( HttpConstants.CONTENT_LENGTH, String.valueOf( fileContents.length ) );
+                    response.setStatusCode( HttpConstants.OK_RESPONSE );
+                    response.sendResponse( fileContents );
                 } else {
-                    response = buildResponse( HttpStatusCode.NOT_FOUND, true );
+                    response.setStatusCode( HttpConstants.NOT_FOUND_RESPONSE );
+                    response.sendResponse();
                 }
             } else if ( request.getHttpMethod().equals( "POST" ) && requestTarget.startsWith( "/files/" ) ) {
                 String fileName = requestTarget.substring( 7 );
@@ -96,39 +83,16 @@ public class HttpHandler implements Runnable {
                     fileWriter.write( request.getBody() );
                     fileWriter.flush();
                     fileWriter.close();
-                    response = buildResponse( HttpStatusCode.CREATED, true );
+                    response.setStatusCode( HttpConstants.CREATED_RESPONSE );
+                    response.sendResponse();
                 }
             } else {
-                response = buildResponse( HttpStatusCode.NOT_FOUND, true );
+                response.setStatusCode( HttpConstants.NOT_FOUND_RESPONSE );
+                response.sendResponse();
             }
-
-            if ( response != null ) {
-                writer.write( response.toString() );
-            }
-            writer.flush();
+            response.terminate();
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
-    }
-
-    private StringBuilder buildResponse( HttpStatusCode statusCode, boolean hasCRLF ) {
-        StringBuilder response = new StringBuilder();
-        response.append( HttpVersion.ONE_POINT_ONE.getVersion() )
-                .append( HttpConstants.REQUEST_LINE_SEPARATOR )
-                .append( statusCode.getStatusCode() )
-                .append( HttpConstants.CRLF );
-        return hasCRLF ? response.append( HttpConstants.CRLF ) : response;
-    }
-
-    private StringBuilder buildResponse( HttpStatusCode statusCode, Map<HttpHeader, String> responseHeaders ) {
-        StringBuilder response = buildResponse( statusCode, false );
-        for ( HttpHeader header : responseHeaders.keySet() ) {
-            response.append( header.getField() )
-                    .append( HttpConstants.HEADER_SEPARATOR )
-                    .append( HttpConstants.REQUEST_LINE_SEPARATOR )
-                    .append( responseHeaders.get( header ) )
-                    .append( HttpConstants.CRLF );
-        }
-        return response.append( HttpConstants.CRLF );
     }
 }

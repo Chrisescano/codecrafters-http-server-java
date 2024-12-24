@@ -12,12 +12,6 @@ import java.util.zip.GZIPOutputStream;
 
 public class GZip {
 
-//    public static void main( String[] args ) {
-//        byte[] bArray = compress( "abc" );
-//        String s = decompress( bArray );
-//        System.out.println(s);
-//    }
-
     public static byte[] compress( final String data ) {
         if ( data == null || data.isEmpty() ) {
             return new byte[] {};

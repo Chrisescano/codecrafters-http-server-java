@@ -1,9 +1,7 @@
 import util.HttpConstants;
-import util.HttpHeader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,7 +12,7 @@ public class HttpRequest {
     private String httpVersion;
     private String body;
     private final BufferedReader reader;
-    private final Map<HttpHeader, String> headers;
+    private final Map<String, String> headers;
 
     private final static int END_OF_STREAM = -1;
 
@@ -25,21 +23,21 @@ public class HttpRequest {
 
     public void parseRequest() {
         try {
-            httpMethod = readUntil( reader, HttpConstants.REQUEST_LINE_SEPARATOR );
-            requestTarget = readUntil( reader, HttpConstants.REQUEST_LINE_SEPARATOR );
-            httpVersion = readUntil( reader, HttpConstants.CRLF );
+            httpMethod = readUntil( HttpConstants.REQUEST_LINE_SEPARATOR );
+            requestTarget = readUntil( HttpConstants.REQUEST_LINE_SEPARATOR );
+            httpVersion = readUntil( HttpConstants.CRLF );
 
             while ( true ) {
-                Map.Entry<HttpHeader, String> header = readHeader( reader );
+                String[] header = readHeader();
                 if ( header == null ) {
                     break; //end of header reached
                 } else {
-                    headers.put( header.getKey(), header.getValue() );
+                    headers.put( header[0], header[1] );
                 }
             }
 
-            if ( headers.containsKey( HttpHeader.CONTENT_LENGTH ) ) {
-                int bodyLength = Integer.parseInt( headers.get( HttpHeader.CONTENT_LENGTH ) );
+            if ( headers.containsKey( HttpConstants.CONTENT_LENGTH ) ) {
+                int bodyLength = Integer.parseInt( headers.get( HttpConstants.CONTENT_LENGTH ) );
                 char[] charBuff = new char[ bodyLength ];
                 int result = reader.read( charBuff, 0, bodyLength );
                 if ( result == END_OF_STREAM ) {
@@ -52,7 +50,9 @@ public class HttpRequest {
         }
     }
 
-    private String readUntil( BufferedReader reader, String delimiter ) throws IOException {
+    /*----- Helper Methods -----*/
+
+    private String readUntil( String delimiter ) throws IOException {
         StringBuilder builder = new StringBuilder();
         StringBuilder stack = new StringBuilder();
         char[] delimiterTokens = delimiter.toCharArray();
@@ -77,8 +77,8 @@ public class HttpRequest {
         return builder.toString();
     }
 
-    private Map.Entry<HttpHeader, String> readHeader( BufferedReader reader ) throws IOException {
-        String header = readUntil( reader, HttpConstants.CRLF );
+    private String[] readHeader() throws IOException {
+        String header = readUntil( HttpConstants.CRLF );
         if ( header.isEmpty() ) {
             return null;
         }
@@ -91,7 +91,7 @@ public class HttpRequest {
         if ( field.isEmpty() || value.isEmpty() ) {
             return null;
         }
-        return new AbstractMap.SimpleImmutableEntry<>( HttpHeader.getHeader( field ), value.trim() );
+        return new String[] { field, value.trim() };
     }
 
     @Override
@@ -119,7 +119,7 @@ public class HttpRequest {
         return httpVersion;
     }
 
-    public Map<HttpHeader, String> getHeaders() {
+    public Map<String, String> getHeaders() {
         return headers;
     }
 
