@@ -1,7 +1,7 @@
 import util.HttpConstants;
 
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,13 +11,13 @@ public class HttpRequest {
     private String requestTarget;
     private String httpVersion;
     private String body;
-    private final BufferedReader reader;
+    private final InputStream inputStream;
     private final Map<String, String> headers;
 
     private final static int END_OF_STREAM = -1;
 
-    public HttpRequest( BufferedReader reader ) {
-        this.reader = reader;
+    public HttpRequest( InputStream reader ) {
+        this.inputStream = reader;
         headers = new HashMap<>();
     }
 
@@ -38,8 +38,8 @@ public class HttpRequest {
 
             if ( headers.containsKey( HttpConstants.CONTENT_LENGTH ) ) {
                 int bodyLength = Integer.parseInt( headers.get( HttpConstants.CONTENT_LENGTH ) );
-                char[] charBuff = new char[ bodyLength ];
-                int result = reader.read( charBuff, 0, bodyLength );
+                byte[] charBuff = new byte[ bodyLength ];
+                int result = inputStream.read( charBuff, 0, bodyLength );
                 if ( result == END_OF_STREAM ) {
                     throw new RuntimeException( "End of Stream Reached" );
                 }
@@ -57,7 +57,7 @@ public class HttpRequest {
         StringBuilder stack = new StringBuilder();
         char[] delimiterTokens = delimiter.toCharArray();
         for ( int i = 0; i < delimiterTokens.length; i++ ) {
-            int charRead = reader.read();
+            int charRead = inputStream.read();
             if ( charRead == END_OF_STREAM ) {
                 return builder.toString();
             }
@@ -75,6 +75,14 @@ public class HttpRequest {
         }
 
         return builder.toString();
+    }
+
+    public void terminate() {
+        try {
+            inputStream.close();
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
     private String[] readHeader() throws IOException {

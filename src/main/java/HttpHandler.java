@@ -1,12 +1,10 @@
 import compression.GZip;
 import util.HttpConstants;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -24,8 +22,8 @@ public class HttpHandler implements Runnable {
 
     @Override
     public void run() {
-        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( socket.getInputStream() ) ) ) {
-            HttpRequest request = new HttpRequest( reader );
+        try {
+            HttpRequest request = new HttpRequest( socket.getInputStream() );
             HttpResponse response = new HttpResponse( socket.getOutputStream(), HttpConstants.HTTP_VERSION_1_1 );
             request.parseRequest();
             Map<String, String> requestHeaders = request.getHeaders();
@@ -90,6 +88,7 @@ public class HttpHandler implements Runnable {
                 response.setStatusCode( HttpConstants.NOT_FOUND_RESPONSE );
                 response.sendResponse();
             }
+            request.terminate();
             response.terminate();
         } catch ( IOException e ) {
             throw new RuntimeException( e );

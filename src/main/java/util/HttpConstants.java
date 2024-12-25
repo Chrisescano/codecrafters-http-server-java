@@ -17,6 +17,6 @@ public class HttpConstants {
     public static final String HTTP_VERSION_1_1 = "HTTP/1.1";
 
     public static final String OK_RESPONSE = "200 OK";
-    public static final String CREATED_RESPONSE = "201 CREATED";
+    public static final String CREATED_RESPONSE = "201 Created";
     public static final String NOT_FOUND_RESPONSE = "404 Not Found";
 }
